@@ -14,9 +14,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.maven.execution.AbstractExecutionListener;
@@ -120,10 +118,27 @@ public final class BuildEventListener extends AbstractExecutionListener {
     @Override
     public void sessionEnded(ExecutionEvent event) {
         try {
-            report();
+            Map<String, Set<String>> dependencyData =
+                    reportDependencyGraph(event.getSession().getAllProjects());
+            report(dependencyData);
         } catch (IOException e) {
             logger.warn("Failed to save timeline metrics", e);
         }
+    }
+
+    private Map<String, Set<String>> reportDependencyGraph(List<MavenProject> allProjects) {
+        Map<String, Set<String>> graph = new HashMap<>();
+
+        allProjects.forEach(mavenProject -> {
+            Set<String> dependencies = new HashSet<>(mavenProject.getDependencies().size());
+            mavenProject.getDependencies().forEach(dependency -> {
+                dependencies.add(dependency.getGroupId() + ":" + dependency.getArtifactId());
+            });
+
+            graph.put(mavenProject.getGroupId() + ":" + mavenProject.getArtifactId(), dependencies);
+        });
+
+        return graph;
     }
 
     private Execution key(ExecutionEvent event) {
@@ -137,7 +152,7 @@ public final class BuildEventListener extends AbstractExecutionListener {
                 mojo.getExecutionId());
     }
 
-    private void report() throws IOException {
+    private void report(Map<String, Set<String>> dependencyData) throws IOException {
         File path = output.getParentFile();
         if (!(path.isDirectory() || path.mkdirs())) {
             throw new IOException("Unable to create " + path);
@@ -147,15 +162,15 @@ public final class BuildEventListener extends AbstractExecutionListener {
             Metric.array(writer, executionMetrics.values());
         }
 
-        exportTimeline();
+        exportTimeline(dependencyData);
     }
 
-    private void exportTimeline() throws IOException {
+    private void exportTimeline(Map<String, Set<String>> dependencyData) throws IOException {
         long endTime = nowInUtc();
         WebUtils.copyResourcesToDirectory(getClass(), "timeline", mavenTimeline.getParentFile());
         try (Writer mavenTimelineWriter = new BufferedWriter(new FileWriter(mavenTimeline))) {
-            Timeline timeline =
-                    new Timeline(startTime, endTime, groupId, artifactId, new ArrayList<>(timelineMetrics.values()));
+            Timeline timeline = new Timeline(
+                    startTime, endTime, groupId, artifactId, new ArrayList<>(timelineMetrics.values()), dependencyData);
             mavenTimelineWriter.write("window.timelineData = ");
             TimelineSerializer.serialize(mavenTimelineWriter, timeline);
             mavenTimelineWriter.write(";");
