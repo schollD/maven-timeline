@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>io.takari</groupId>
-    <artifactId>takari</artifactId>
-    <version>60</version>
-  </parent>
+<!--  <parent>-->
+<!--    <groupId>io.takari</groupId>-->
+<!--    <artifactId>takari</artifactId>-->
+<!--    <version>60</version>-->
+<!--  </parent>-->
   <groupId>io.takari.maven</groupId>
   <artifactId>maven-timeline</artifactId>
   <version>2.0.3-SNAPSHOT</version>
-  <packaging>takari-maven-component</packaging>
+<!--  <packaging>takari-maven-component</packaging>-->
 
   <name>Maven Timeline extension</name>
   <description>Output the timeline of a build to am html file</description>
