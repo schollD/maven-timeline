@@ -15,6 +15,8 @@ function TimeLine(timelineData) {
   addProperty(document.getElementsByTagName("header")[0], timelineData, "groupId");
   addProperty(document.getElementsByTagName("header")[0], timelineData, "artifactId");
 
+  const self = this;
+
   function twoDigits(num) {
     if(num == undefined || Number.isNaN(num)) return "00";
     if(num < 10) return "0" + num;
@@ -125,10 +127,28 @@ function TimeLine(timelineData) {
         "phase-" + event.phase + " " +
         "goal-" + event.goal + " " +
         "artifactId-" + event.artifactId + " " +
+        "groupId-" + event.groupId.replaceAll(".","-") + " " +
         "id-" + event.id)
       ;
       div.setAttribute("title", description(event));
+
+      let clickHandler = ((timelineEvent) => {
+        return (ev) => {
+            if(typeof self.onEventClicked === "function") {
+                self.onEventClicked(timelineEvent);
+                ev.stopPropagation();
+            }
+        }
+      })(event)
+      div.addEventListener("click", clickHandler);
     }
+
+      rootContainer.addEventListener("click", () => {
+          if(typeof self.onEventClicked === "function") {
+              self.onEventClicked(undefined);
+          }
+        }
+      );
 
     renderTimeLabel(sessionStartTime, sessionStartTime, zoomFactor, rootContainer);
 

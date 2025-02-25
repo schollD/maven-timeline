@@ -244,6 +244,81 @@ function TimeLineApp() {
     });
   }
 
+  function addDependencyCard(timeLine) {
+    var controlsContainer = document.createElement("div");
+    const depsDiv = document.createElement("div");
+    const style = document.createElement("style");
+    controlsContainer.setAttribute("class", "dependency card");
+    var h2 = document.createElement("h2");
+    h2.innerText = "Build dependencies";
+    controlsContainer.appendChild(h2);
+    controlsContainer.appendChild(depsDiv);
+    document.getElementsByTagName("aside")[0].appendChild(controlsContainer);
+
+    timeLine.onEventClicked = function(timeLineEvent) {
+        if(!timeLineEvent) {
+            depsDiv.innerHTML = "No selection";
+            return;
+        }
+        let styleText = "";
+        const key = timeLineEvent.groupId + ":" + timeLineEvent.artifactId;
+        const predecessors = timelineData.dependencies[key].filter((v,i,arr) => timelineData.dependencies[v]); // filter out third parties
+        var hSuccessors = document.createElement("h3");
+        hSuccessors.innerText = "Successors";
+        var hPredecessors = document.createElement("h3");
+        hPredecessors.innerText = "Predecessors";
+        depsDiv.innerHTML = "Selection: " + key;
+        depsDiv.appendChild(hPredecessors);
+        let list = document.createElement("ul");
+        for(var pre of predecessors) {
+            var li = document.createElement("li");
+            li.innerText = pre;
+            list.appendChild(li);
+        }
+        if(predecessors.length > 0) {
+            depsDiv.appendChild(list);
+            let classList1 = predecessors
+                .map((v, i, arr) => ".groupId-" + v.split(':')[0].replaceAll(".","-") + ".artifactId-" + v.split(':')[1])
+                .join(",\n");
+            styleText = classList1 + " {\n\tbackground-color: " + window.highlightColorTheme[window.highlightColorTheme.length-1] + ";\n}\n";
+        }
+        else {
+            depsDiv.appendChild(document.createTextNode("None"))
+        }
+        depsDiv.appendChild(hSuccessors);
+        list = document.createElement("ul");
+        const successors = [];
+        for(var candidate of Object.keys(timelineData.dependencies)) {
+            if(timelineData.dependencies[candidate].indexOf(key) >= 0) {
+                successors.push(candidate);
+            }
+        }
+        for(var suc of successors) {
+            var li = document.createElement("li");
+            li.innerText = suc;
+            list.appendChild(li);
+        }
+        if(successors.length > 0) {
+            depsDiv.appendChild(list);
+            let classList2 = successors
+                .map((v, i, arr) => ".groupId-" + v.split(':')[0].replaceAll(".","-") + ".artifactId-" + v.split(':')[1])
+                .join(",\n");
+            styleText += classList2 + " {\n\tbackground-color: " + window.highlightColorTheme[window.highlightColorTheme.length-2] + ";\n}\n";
+        }
+        else {
+            depsDiv.appendChild(document.createTextNode("None"))
+        }
+
+        styleText += ".groupId-" + timeLineEvent.groupId.replaceAll(".","-") + ".artifactId-" + timeLineEvent.artifactId +
+        " {\n\tbackground-color: " + window.highlightColorTheme[window.highlightColorTheme.length-3] + ";\n}\n";
+
+        style.innerHTML = styleText;
+        depsDiv.appendChild(style);
+    }
+
+    timeLine.onEventClicked();
+  }
+
   this.run = function() {
     var zoomMin = 1;
     var zoomMax = Math.max(zoomMin, (timelineData.end - timelineData.start) / 1000);
@@ -253,7 +328,8 @@ function TimeLineApp() {
 
     addControls(zoomMin, zoomMax, zoomDefault, this.timeLineDb, this.timeLine);
     addStatsCards(this.timeLineDb);
-    addRankings(this.timeLineDb)
+    addRankings(this.timeLineDb);
+    addDependencyCard(this.timeLine);
   }
 }
 
