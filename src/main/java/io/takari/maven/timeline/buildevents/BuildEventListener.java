@@ -9,14 +9,13 @@ import io.takari.maven.timeline.Event;
 import io.takari.maven.timeline.Timeline;
 import io.takari.maven.timeline.TimelineSerializer;
 import io.takari.maven.timeline.WebUtils;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
+
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+
 import org.apache.maven.execution.AbstractExecutionListener;
 import org.apache.maven.execution.ExecutionEvent;
 import org.apache.maven.plugin.MojoExecution;
@@ -168,12 +167,73 @@ public final class BuildEventListener extends AbstractExecutionListener {
     private void exportTimeline(Map<String, Set<String>> dependencyData) throws IOException {
         long endTime = nowInUtc();
         WebUtils.copyResourcesToDirectory(getClass(), "timeline", mavenTimeline.getParentFile());
-        try (Writer mavenTimelineWriter = new BufferedWriter(new FileWriter(mavenTimeline))) {
+        StringWriter mavenTimeLineJs = new StringWriter();
+
+        try (Writer mavenTimelineWriter = new BufferedWriter(mavenTimeLineJs)) {
             Timeline timeline = new Timeline(
                     startTime, endTime, groupId, artifactId, new ArrayList<>(timelineMetrics.values()), dependencyData);
             mavenTimelineWriter.write("window.timelineData = ");
             TimelineSerializer.serialize(mavenTimelineWriter, timeline);
             mavenTimelineWriter.write(";");
+        }
+
+        try (Writer mavenTimelineWriter = new BufferedWriter(new FileWriter(mavenTimeline))) {
+            mavenTimelineWriter.write(mavenTimeLineJs.toString());
+        }
+
+        String appJs = getClassPathResource("app.js");
+        String databaseJs = getClassPathResource("database.js");
+        String styleCss = getClassPathResource("style.css");
+        String timeLineJs = getClassPathResource("timeline.js");
+
+        if(appJs == null || databaseJs == null || styleCss == null || timeLineJs == null) {
+            logger.warn("Failed to save timeline standalone");
+            return;
+        }
+
+        StringBuilder timeLineHtml = new StringBuilder();
+
+        timeLineHtml.append("<html>\n<head>\n\t<title>Maven Timeline</title>\n");
+
+        timeLineHtml
+            .append("\t<script>\n\t").append(appJs).append("\n\t//# sourceURL=app.js\n\t</script>\n")
+            .append("\t<script>\n\t").append(databaseJs).append("\n\t//# sourceURL=database.js\n\t</script>\n")
+            .append("\t<style>\n\t").append(styleCss).append("\n\t//# sourceURL=style.css\n\t</style>\n")
+            .append("\t<script>\n\t").append(mavenTimeLineJs).append( "\n\t//# sourceURL=maven-timeline.js\n\t</script>\n")
+            .append("\t<script>\n\t").append(timeLineJs).append("\n\t//# sourceURL=timeline.js\n\t</script>\n");
+
+        timeLineHtml.append(
+            "</head>\n" +
+            "<body onload=\"new TimeLineApp().run();\">\n" +
+            "<header>\n" +
+            "\t<h1>Time line</h1>\n" +
+            "</header>\n" +
+            "<main>\n" +
+            "\t<div id=\"timeLineContainer\"></div>\n" +
+            "</main>\n" +
+            "<aside></aside>\n" +
+            "</body>\n" +
+            "</html>\n");
+
+        File target = new File(mavenTimeline.getParent(), "timeline-standalone.html");
+        try (Writer mavenTimelineHtmlWriter = new BufferedWriter(new FileWriter(target))) {
+            mavenTimelineHtmlWriter.write(timeLineHtml.toString());
+        }
+
+        logger.info("Saved timeline standalone to {}", target.getAbsolutePath());
+    }
+
+    private String getClassPathResource(String name) {
+
+        InputStream resourceAsStream = this.getClass().getResourceAsStream("/timeline/" + name);
+        if(resourceAsStream == null) {
+            return null;
+        }
+
+        try(BufferedReader reader = new BufferedReader(new InputStreamReader(resourceAsStream))) {
+            return reader.lines().collect(Collectors.joining("\n\t"));
+        } catch (IOException e) {
+            return null;
         }
     }
 

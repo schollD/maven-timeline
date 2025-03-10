@@ -82,30 +82,32 @@ function TimeLineApp() {
     controlsContainer.appendChild(h2);
     document.getElementsByTagName("aside")[0].appendChild(controlsContainer);
 
-    var sliderContainer = document.createElement("div");
-    var slider = document.createElement("div");
-    slider.setAttribute("id", "zoomSlider");
-    sliderContainer.appendChild(elem("span", "Zoom"));
-    sliderContainer.appendChild(slider);
+    if(window.$) {
+        var sliderContainer = document.createElement("div");
+        var slider = document.createElement("div");
+        slider.setAttribute("id", "zoomSlider");
+        sliderContainer.appendChild(elem("span", "Zoom"));
+        sliderContainer.appendChild(slider);
 
-    var legendElement = document.createElement("legend");
-    legendElement.innerText = "Show/Hide labels";
-    controlsContainer.appendChild(sliderContainer);
-    controlsContainer.appendChild(legendElement);
-    $(function () {
-      $("#zoomSlider").slider({
-        min: zoomMin, max: zoomMax, step: 1, value: zoomDefault,
-        change: function (ev, ui) {
-          timeLine.render(ui.value);
-        }
-      });
-    });
+        var legendElement = document.createElement("legend");
+        legendElement.innerText = "Show/Hide labels";
+        controlsContainer.appendChild(sliderContainer);
+        controlsContainer.appendChild(legendElement);
+        $(function () {
+          $("#zoomSlider").slider({
+            min: zoomMin, max: zoomMax, step: 1, value: zoomDefault,
+            change: function (ev, ui) {
+              timeLine.render(ui.value);
+            }
+          });
+        });
+    }
 
-    appendCssClassToggle(controlsContainer, "groupId", false);
+    appendCssClassToggle(controlsContainer, "groupId", true);
     appendCssClassToggle(controlsContainer, "artifactId", true);
-    appendCssClassToggle(controlsContainer, "goal", false);
     appendCssClassToggle(controlsContainer, "phase", true);
-    appendCssClassToggle(controlsContainer, "id", false);
+    appendCssClassToggle(controlsContainer, "goal", true);
+    appendCssClassToggle(controlsContainer, "id", true);
     appendCssClassToggle(controlsContainer, "duration", true);
 
     legendElement = document.createElement("legend");
@@ -159,20 +161,16 @@ function TimeLineApp() {
     label.appendChild(input);
     controlsContainer.appendChild(label);
 
-    $(function () {
-      $("#" + name).checkboxradio({
-        icon: false,
-        value: enabled
-      });
-    });
-    $("#" + name).on("change", function (e) {
+    document.querySelector("#" + name).addEventListener("change", (e) => {
       var attribute = e.target.getAttribute("data-title");
 
       if (e.target.checked == true) {
-        $("." + attribute).show();
+        document.querySelectorAll("." + attribute).forEach((e) => e.style.display = "initial")
+        e.target.setAttribute("checked", "true");
       }
       else {
-        $("." + attribute).hide();
+        document.querySelectorAll("." + attribute).forEach((e) => e.style.display = "none")
+        e.target.setAttribute("checked", "false");
       }
     });
   }
@@ -199,15 +197,17 @@ function TimeLineApp() {
     //  "background-color: " + window.highlightColorTheme[index] + "; transition: background-color .5s;"
     //);
 
-    $(function () {
-      $("#" + name).checkboxradio({
-        icon: false,
-        value: false
-      });
-    });
-    $("#" + name).on("change", function (e) {
+    document.querySelector("#" + name).addEventListener("change", (e) => {
       var attribute = e.target.getAttribute("data-title");
       var index = e.target.getAttribute("data-index");
+      var checked = e.target.getAttribute("checked");
+
+      if(checked === "true") {
+        e.target.setAttribute("checked", "false");
+      }
+      else {
+        e.target.setAttribute("checked", "true");
+      }
 
       var sheet = document.styleSheets[attribute];
       if(sheet == undefined) {
@@ -267,7 +267,9 @@ function TimeLineApp() {
         hSuccessors.innerText = "Successors";
         var hPredecessors = document.createElement("h3");
         hPredecessors.innerText = "Predecessors";
-        depsDiv.innerHTML = "Selection: " + key;
+        var selectionText = key + "<br/>Start:&nbsp;" + new Date(timeLineEvent.start).toISOString() + "<br/>End:&nbsp;&nbsp;" + new Date(timeLineEvent.end).toISOString();
+        selectionText += "<br/>Duration: " + formatTime(timeLineEvent.duration);
+        depsDiv.innerHTML = "Selection: " +selectionText;
         depsDiv.appendChild(hPredecessors);
         let list = document.createElement("ul");
         for(var pre of predecessors) {
@@ -327,9 +329,9 @@ function TimeLineApp() {
     this.timeLine.render(zoomDefault);
 
     addControls(zoomMin, zoomMax, zoomDefault, this.timeLineDb, this.timeLine);
+    addDependencyCard(this.timeLine);
     addStatsCards(this.timeLineDb);
     addRankings(this.timeLineDb);
-    addDependencyCard(this.timeLine);
   }
 }
 

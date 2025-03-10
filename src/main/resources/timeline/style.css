@@ -95,6 +95,8 @@ header > .groupId:after,
   padding: 20px;
   margin: 20px;
   min-width: 300px;
+  max-height: 500px;
+  overflow: auto;
 }
 
 .card.summary,
@@ -144,4 +146,54 @@ header > .groupId:after,
 
 .highlightingBox.ui-state-active {
   opacity: 1;
+}
+
+/* Replacement for jquery-ui.css */
+label[for] {
+    margin-top: 10px;
+    border-bottom-right-radius: 3px;
+    border-bottom-left-radius: 3px;
+    border-top-right-radius: 3px;
+    border-top-left-radius: 3px;
+    color: #454545;
+    text-decoration: none;
+    border: 1px solid #c5c5c5;
+    background: #f6f6f6;
+    font-weight: normal;
+    color: #454545;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 1em;
+    text-decoration: none;
+    padding: 0.4em 1em;
+    display: inline-block;
+    position: relative;
+    line-height: normal;
+    margin-right: 0.1em;
+    cursor: pointer;
+    vertical-align: middle;
+    text-align: center;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    overflow: visible;
+}
+input[type="checkbox"] {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 1em;
+    border: 0;
+    clip: rect(0 0 0 0);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    width: 1px;
+}
+label[for]:has(input[checked="true"]) {
+    border: 1px solid #003eff;
+    background: #007fff;
+    font-weight: normal;
+    color: #ffffff;
+    opacity: 1;
 }
