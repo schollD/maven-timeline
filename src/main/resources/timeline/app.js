@@ -264,7 +264,7 @@ function TimeLineApp() {
     });
   }
 
-  function addDependencyCard(timeLine) {
+  function addDependencyCard(timeLine, timeLineDb) {
     var controlsContainer = document.createElement("div");
     const depsDiv = document.createElement("div");
     const style = document.createElement("style");
@@ -302,7 +302,8 @@ function TimeLineApp() {
             let classList1 = predecessors
                 .map((v, i, arr) => ".groupId-" + v.split(':')[0].replaceAll(".","-") + ".artifactId-" + v.split(':')[1])
                 .join(",\n");
-            styleText = classList1 + " {\n\tbackground-color: " + window.highlightColorTheme[window.highlightColorTheme.length-1] + ";\n}\n";
+            styleText += "/* Direct predecessors */\n";
+            styleText += classList1 + " {\n\tbackground-color: " + window.highlightColorTheme[window.highlightColorTheme.length-1] + " !important;\n}\n";
         }
         else {
             depsDiv.appendChild(document.createTextNode("None"))
@@ -325,12 +326,51 @@ function TimeLineApp() {
             let classList2 = successors
                 .map((v, i, arr) => ".groupId-" + v.split(':')[0].replaceAll(".","-") + ".artifactId-" + v.split(':')[1])
                 .join(",\n");
-            styleText += classList2 + " {\n\tbackground-color: " + window.highlightColorTheme[window.highlightColorTheme.length-2] + ";\n}\n";
+            styleText += "/* Direct successors */\n";
+            styleText += classList2 + " {\n\tbackground-color: " + window.highlightColorTheme[window.highlightColorTheme.length-2] + " !important;\n}\n";
         }
         else {
             depsDiv.appendChild(document.createTextNode("None"))
         }
 
+        let startPath = timeLineDb.getLongestPathToStart(timeLineEvent.groupId, timeLineEvent.artifactId);
+        let endPath = timeLineDb.getLongestPathToEnd(timeLineEvent.groupId, timeLineEvent.artifactId);
+
+        if(startPath.path.length > 0) {
+          hSuccessors = document.createElement("h3");
+          hSuccessors.innerText = "Longest path to start (" + formatTime(startPath.cost) + ")";
+          depsDiv.appendChild(hSuccessors);
+          list = document.createElement("ol");
+          styleText += "/* Indirect predecessors */\n";
+          for (var startElement of startPath.path) {
+            var li = document.createElement("li");
+            li.innerText = startElement.groupId + ":" + startElement.artifactId;
+            list.appendChild(li);
+
+            styleText += ".groupId-" + startElement.groupId.replaceAll(".","-") + ".artifactId-" + startElement.artifactId +
+              " {\n\tbackground-color: " + window.highlightColorTheme[window.highlightColorTheme.length-4] + ";\n}\n";
+          }
+          depsDiv.appendChild(list);
+        }
+
+        if(endPath.path.length > 0) {
+          hPredecessors = document.createElement("h3");
+          hPredecessors.innerText = "Longest path to end (" + formatTime(endPath.cost) + ")";
+          depsDiv.appendChild(hPredecessors);
+          list = document.createElement("ol");
+          styleText += "/* Indirect successors */\n";
+          for (var endElement of endPath.path) {
+            var li = document.createElement("li");
+            li.innerText = endElement.groupId + ":" + endElement.artifactId;
+            list.appendChild(li);
+
+            styleText += ".groupId-" + endElement.groupId.replaceAll(".","-") + ".artifactId-" + endElement.artifactId +
+              " {\n\tbackground-color: " + window.highlightColorTheme[window.highlightColorTheme.length-4] + ";\n}\n";
+          }
+          depsDiv.appendChild(list);
+        }
+
+        styleText += "/* Self */\n";
         styleText += ".groupId-" + timeLineEvent.groupId.replaceAll(".","-") + ".artifactId-" + timeLineEvent.artifactId +
         " {\n\tbackground-color: " + window.highlightColorTheme[window.highlightColorTheme.length-3] + ";\n}\n";
 
@@ -349,7 +389,7 @@ function TimeLineApp() {
     this.timeLine.render(zoomDefault);
 
     addControls(zoomMin, zoomMax, zoomDefault, this.timeLineDb, this.timeLine);
-    addDependencyCard(this.timeLine);
+    addDependencyCard(this.timeLine, this.timeLineDb);
     addStatsCards(this.timeLineDb);
     addRankings(this.timeLineDb);
   }

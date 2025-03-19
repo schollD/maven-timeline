@@ -19,6 +19,16 @@
       <artifactId>firstSubModule</artifactId>
       <version>1</version>
     </dependency>
+    <dependency>
+      <groupId>io.test</groupId>
+      <artifactId>firstModule</artifactId>
+      <version>1</version>
+    </dependency>
+    <dependency>
+      <groupId>io.test</groupId>
+      <artifactId>secondModule</artifactId>
+      <version>1</version>
+    </dependency>
   </dependencies>
 
 </project>

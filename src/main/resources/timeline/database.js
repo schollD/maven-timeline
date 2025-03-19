@@ -60,4 +60,65 @@ function TimeLineDb(timelineData) {
       .sort((a, b) => b[1] - a[1])
       .forEach(([trackNum, duration]) => renderFunc(trackNum, duration));
   };
+
+  this.getLongestPathToStart = function(groupId, artifactId) {
+    return this.getLongestPath(groupId, artifactId, timelineData.dependencies, this.getLongestPathToStart);
+  }
+
+  this.getLongestPathToEnd = function(groupId, artifactId) {
+    if(!timelineData.reverseDependencies) {
+      timelineData.reverseDependencies = [];
+      Object.keys(timelineData.dependencies).forEach(dependency => {
+        let reverseDeps = [];
+        Object.keys(timelineData.dependencies).forEach((current) => {
+          if(timelineData.dependencies[current].indexOf(dependency) != -1) {
+            reverseDeps.push(current)
+          }
+        });
+        timelineData.reverseDependencies[dependency] = reverseDeps;
+      });
+    }
+    return this.getLongestPath(groupId, artifactId, timelineData.reverseDependencies, this.getLongestPathToEnd);
+  }
+
+  this.getLongestPath = function(groupId, artifactId, dependencies, stepFunc) {
+    let directDependencies = dependencies[groupId + ":" + artifactId];
+
+    let self = {
+      cost: timelineData.events
+        .filter( (ev) => ev.artifactId === artifactId && ev.groupId === groupId)
+        .map( (ev) => ev.duration)
+        .reduce( (a,b) => a+b, 0),
+      groupId: groupId,
+      artifactId: artifactId,
+      path: []
+    }
+
+    let paths = [];
+
+    if(directDependencies && directDependencies.length > 0) {
+
+      for (const directDependency of directDependencies) {
+        let split = directDependency.split(":");
+        let path = stepFunc.call(this, split[0], split[1]);
+        paths.push(path);
+      }
+
+      if(paths.length > 0) {
+        paths.sort( (p1, p2) => {
+          if(p1.cost < p2.cost) return -1;
+          if(p1.cost > p2.cost) return 1;
+          return 0;
+        });
+        let last = paths[paths.length-1];
+        if(last.cost !== 0 || last.path.length !== 0) {
+          self.cost += last.cost;
+          self.path = last.path;
+          self.path.push({groupId: last.groupId, artifactId: last.artifactId})
+        }
+      }
+    }
+
+    return self;
+  };
 }

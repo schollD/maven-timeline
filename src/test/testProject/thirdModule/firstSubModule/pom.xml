@@ -16,12 +16,12 @@
   <dependencies>
     <dependency>
       <groupId>io.test</groupId>
-      <artifactId>firstModule</artifactId>
+      <artifactId>secondModule</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>io.test</groupId>
-      <artifactId>firstModule</artifactId>
+      <artifactId>secondModule</artifactId>
       <scope>provided</scope>
       <version>1</version>
       <type>pom</type>
