@@ -167,18 +167,22 @@ public final class BuildEventListener extends AbstractExecutionListener {
     private void exportTimeline(Map<String, Set<String>> dependencyData) throws IOException {
         long endTime = nowInUtc();
         WebUtils.copyResourcesToDirectory(getClass(), "timeline", mavenTimeline.getParentFile());
-        StringWriter mavenTimeLineJs = new StringWriter();
+        StringWriter mavenTimeLineJson = new StringWriter();
 
-        try (Writer mavenTimelineWriter = new BufferedWriter(mavenTimeLineJs)) {
+        try (Writer mavenTimelineWriter = new BufferedWriter(mavenTimeLineJson)) {
             Timeline timeline = new Timeline(
                     startTime, endTime, groupId, artifactId, new ArrayList<>(timelineMetrics.values()), dependencyData);
-            mavenTimelineWriter.write("window.timelineData = ");
             TimelineSerializer.serialize(mavenTimelineWriter, timeline);
-            mavenTimelineWriter.write(";");
         }
 
-        try (Writer mavenTimelineWriter = new BufferedWriter(new FileWriter(mavenTimeline))) {
-            mavenTimelineWriter.write(mavenTimeLineJs.toString());
+        try (Writer mavenTimelineJsWriter = new BufferedWriter(new FileWriter(mavenTimeline))) {
+            mavenTimelineJsWriter.write("window.timelineData = ");
+            mavenTimelineJsWriter.write(mavenTimeLineJson.toString());
+            mavenTimelineJsWriter.write(";");
+        }
+
+        try (Writer mavenTimelineJSONWriter = new BufferedWriter(new FileWriter(new File(mavenTimeline.getParent(), "timeline.json")))) {
+            mavenTimelineJSONWriter.write(mavenTimeLineJson.toString());
         }
 
         String appJs = getClassPathResource("app.js");
@@ -199,7 +203,7 @@ public final class BuildEventListener extends AbstractExecutionListener {
             .append("\t<script>\n\t").append(appJs).append("\n\t//# sourceURL=app.js\n\t</script>\n")
             .append("\t<script>\n\t").append(databaseJs).append("\n\t//# sourceURL=database.js\n\t</script>\n")
             .append("\t<style>\n\t").append(styleCss).append("\n\t//# sourceURL=style.css\n\t</style>\n")
-            .append("\t<script>\n\t").append(mavenTimeLineJs).append( "\n\t//# sourceURL=maven-timeline.js\n\t</script>\n")
+            .append("\t<script>\n\t").append("window.timelineData = ").append(mavenTimeLineJson).append(";\n\t//# sourceURL=maven-timeline.js\n\t</script>\n")
             .append("\t<script>\n\t").append(timeLineJs).append("\n\t//# sourceURL=timeline.js\n\t</script>\n");
 
         timeLineHtml.append(
