@@ -15,6 +15,30 @@ function TimeLine(timelineData) {
   addProperty(document.getElementsByTagName("header")[0], timelineData, "groupId");
   addProperty(document.getElementsByTagName("header")[0], timelineData, "artifactId");
 
+  let summary = {
+    start: Number.MAX_VALUE,
+    end: Number.MIN_VALUE,
+    totalTime: 0,
+    threadCount: 0
+  };
+  const keys = new Set();
+  timelineData.events.forEach(event => {
+    summary.start = Math.min(summary.start, event.start);
+    summary.end = Math.max(summary.end, event.end);
+    summary.totalTime += event.duration;
+    summary.threadCount = Math.max(event.trackNum+1, summary.threadCount);
+    keys.add(event.groupId + ":" + event.artifactId);
+  });
+  summary.artifactCount = keys.size;
+  summary.utilization = (summary.totalTime / summary.threadCount) / (summary.end - summary.start);
+
+  document.getElementsByTagName("header")[0].appendChild(document.createElement("br"));
+  let summaryElement = document.createElement("summary");
+  summaryElement.innerText = "Start: " + new Date(summary.start).toUTCString() + "\nEnd:  " + new Date(summary.end).toUTCString() +
+    " (" + formatTime(summary.end - summary.start) + " total)\n"
+    + summary.artifactCount + " modules on " + summary.threadCount + " tracks. " + formatTime(summary.totalTime) + " CPU time, " + Math.round(summary.utilization * 100) + "% utilization.";
+  document.getElementsByTagName("header")[0].appendChild(summaryElement);
+
   const self = this;
 
   function twoDigits(num) {
