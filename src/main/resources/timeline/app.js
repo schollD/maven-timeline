@@ -335,6 +335,7 @@ function TimeLineApp() {
 
         let startPath = timeLineDb.getLongestPathToStart(timeLineEvent.groupId, timeLineEvent.artifactId);
         let endPath = timeLineDb.getLongestPathToEnd(timeLineEvent.groupId, timeLineEvent.artifactId);
+        endPath.path.reverse();
 
         if(startPath.path.length > 0) {
           hSuccessors = document.createElement("h3");

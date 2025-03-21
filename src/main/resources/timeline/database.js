@@ -61,34 +61,59 @@ function TimeLineDb(timelineData) {
       .forEach(([trackNum, duration]) => renderFunc(trackNum, duration));
   };
 
+  this.costData = new Map();
+  this.forwardsPathCache = new Map();
+  this.backwardsPathCache = new Map();
+  timelineData.events.forEach((event) => {
+    const key = event.groupId + ":" + event.artifactId;
+    if(!this.costData.has(key)) {
+      this.costData.set(key, event.duration);
+    }
+    else {
+      this.costData.set(key, this.costData.get(key) + event.duration);
+    }
+  });
+
+  timelineData.projectDependencies = {};
+  Object.keys(timelineData.dependencies).forEach( (dependency) => {
+    const projectDeps = [];
+    timelineData.dependencies[dependency].forEach( (entry) => {
+      if(this.costData.has(entry)) {
+        projectDeps.push(entry);
+      }
+    });
+    timelineData.projectDependencies[dependency] = projectDeps;
+  });
+
+
+  timelineData.reverseDependencies = [];
+  Object.keys(timelineData.projectDependencies).forEach(dependency => {
+    let reverseDeps = [];
+    Object.keys(timelineData.projectDependencies).forEach((current) => {
+      if(timelineData.projectDependencies[current].indexOf(dependency) !== -1) {
+        reverseDeps.push(current)
+      }
+    });
+    timelineData.reverseDependencies[dependency] = reverseDeps;
+  });
+
   this.getLongestPathToStart = function(groupId, artifactId) {
-    return this.getLongestPath(groupId, artifactId, timelineData.dependencies, this.getLongestPathToStart);
+    return this.getLongestPath(groupId, artifactId, timelineData.projectDependencies, this.getLongestPathToStart, this.forwardsPathCache);
   }
 
   this.getLongestPathToEnd = function(groupId, artifactId) {
-    if(!timelineData.reverseDependencies) {
-      timelineData.reverseDependencies = [];
-      Object.keys(timelineData.dependencies).forEach(dependency => {
-        let reverseDeps = [];
-        Object.keys(timelineData.dependencies).forEach((current) => {
-          if(timelineData.dependencies[current].indexOf(dependency) != -1) {
-            reverseDeps.push(current)
-          }
-        });
-        timelineData.reverseDependencies[dependency] = reverseDeps;
-      });
-    }
-    return this.getLongestPath(groupId, artifactId, timelineData.reverseDependencies, this.getLongestPathToEnd);
+    return this.getLongestPath(groupId, artifactId, timelineData.reverseDependencies, this.getLongestPathToEnd, this.forwardsPathCache);
   }
 
-  this.getLongestPath = function(groupId, artifactId, dependencies, stepFunc) {
-    let directDependencies = dependencies[groupId + ":" + artifactId];
+  this.getLongestPath = function(groupId, artifactId, dependencies, stepFunc, cache) {
+    let key = groupId + ":" + artifactId;
+    if(cache.has(key)) {
+      return cache.get(key);
+    }
+    let directDependencies = dependencies[key];
 
     let self = {
-      cost: timelineData.events
-        .filter( (ev) => ev.artifactId === artifactId && ev.groupId === groupId)
-        .map( (ev) => ev.duration)
-        .reduce( (a,b) => a+b, 0),
+      cost: this.costData.get(key),
       groupId: groupId,
       artifactId: artifactId,
       path: []
@@ -99,6 +124,7 @@ function TimeLineDb(timelineData) {
     if(directDependencies && directDependencies.length > 0) {
 
       for (const directDependency of directDependencies) {
+        if(!this.costData.has(directDependency)) continue;
         let split = directDependency.split(":");
         let path = stepFunc.call(this, split[0], split[1]);
         paths.push(path);
@@ -118,6 +144,8 @@ function TimeLineDb(timelineData) {
         }
       }
     }
+
+    cache.set(key, self);
 
     return self;
   };
