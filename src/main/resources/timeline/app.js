@@ -107,12 +107,12 @@ function TimeLineApp() {
         var slider = document.createElement("input");
         slider.setAttribute("type", "number");
         slider.setAttribute("min", "1");
-        slider.setAttribute("max", "10");
-        slider.setAttribute("step", "1");
-        slider.setAttribute("value", zoomDefault);
+        slider.setAttribute("max", "100");
+        slider.setAttribute("step", "5");
+        slider.setAttribute("value", Math.round(zoomMax / zoomDefault));
         slider.setAttribute("id", "zoomSlider");
         slider.addEventListener("change", (e) => {
-              timeLine.render(e.target.value);
+          timeLine.render( (e.target.value * zoomMax) / 100);
         })
         sliderContainer.appendChild(elem("span", "Zoom"));
         sliderContainer.appendChild(slider);
