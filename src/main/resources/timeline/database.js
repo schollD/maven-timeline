@@ -98,7 +98,7 @@ function TimeLineDb(timelineData) {
   });
 
   this.getLongestPathToStart = function(groupId, artifactId) {
-    return this.getLongestPath(groupId, artifactId, timelineData.projectDependencies, this.getLongestPathToStart, this.forwardsPathCache);
+    return this.getLongestPath(groupId, artifactId, timelineData.projectDependencies, this.getLongestPathToStart, this.backwardsPathCache);
   }
 
   this.getLongestPathToEnd = function(groupId, artifactId) {
@@ -139,13 +139,18 @@ function TimeLineDb(timelineData) {
         let last = paths[paths.length-1];
         if(last.cost !== 0 || last.path.length !== 0) {
           self.cost += last.cost;
-          self.path = last.path;
+          self.path = last.path.map((x) => x);
           self.path.push({groupId: last.groupId, artifactId: last.artifactId})
         }
       }
     }
 
-    cache.set(key, self);
+    cache.set(key, {
+      cost: self.cost,
+      groupId: self.groupId,
+      artifactId: self.artifactId,
+      path: self.path.map((x) => x)
+    });
 
     return self;
   };
